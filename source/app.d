@@ -30,7 +30,7 @@ void main(string[] args) {
       continue;
     }
 
-    if(te2.id != te.id) {
+    if(te2 != te) {
       te = te2;
       send(tid, te);
     }
@@ -38,9 +38,10 @@ void main(string[] args) {
 }
 
 void updateDisplay(TimeEntry te) {
+  auto oldLength = 0;
   auto running = true;
   auto on = true;
-  auto onIndicator = " ☻ ".color(fg.red);
+  auto onIndicator = " • ".color(fg.red);
   auto offIndicator = "   ";
 
   void onTimeEntry(TimeEntry _te) {
@@ -54,7 +55,7 @@ void updateDisplay(TimeEntry te) {
   while(running) {
     // Block until there's a TE
     if(te == te.init) {
-      write("\r");
+      write("\r                                        \r");
       stdout.flush();
       while(te == te.init) {
         receive(&onTimeEntry, &onOwnerTerminated);
@@ -62,9 +63,11 @@ void updateDisplay(TimeEntry te) {
     }
 
     auto indicator = on ? onIndicator : offIndicator;
+    write("\r                                          \r");
     cwrite(
-      "\r" ~ te.description.color(fg.light_black) ~
-      indicator ~ te.humanDuration());
+      te.description.color(fg.light_black) ~
+      indicator ~ te.humanDuration()
+    );
     stdout.flush();
     on = !on;
 
