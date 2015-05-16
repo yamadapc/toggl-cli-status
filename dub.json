@@ -1,0 +1,14 @@
+{
+  "name": "toggl-cli-status",
+  "description": "Toggl Status CLI",
+  "copyright": "Copyright © 2015, Pedro Tacla Yamada",
+  "authors": [
+    "Pedro Tacla Yamada"
+  ],
+  "libs": [
+    "curl"
+  ],
+  "dependencies": {
+    "colorize": "1.0.0"
+  }
+}
