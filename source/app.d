@@ -1,12 +1,14 @@
 import core.thread;
-import std.datetime;
-import std.conv;
 import std.concurrency;
+import std.conv;
+import std.datetime;
 import std.format;
 import std.getopt;
 import std.json;
 import std.net.curl;
+import std.process;
 import std.stdio;
+
 import colorize;
 
 void main(string[] args) {
@@ -15,6 +17,10 @@ void main(string[] args) {
   getopt(args,
     "t|token", &token
   );
+
+  if(token == "") {
+    token = environment.get("TOGGL_API_TOKEN", "");
+  }
 
   TimeEntry te;
   TimeEntry te2;
