@@ -3,6 +3,8 @@ See your current Toggl Time Entry in the Terminal.
 
 ![demo](/demo.gif)
 
+_Using it on tmux or zsh is super buggy/slow atm._
+
 ## Using it on zsh
 On your theme:
 ```
