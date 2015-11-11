@@ -13,9 +13,11 @@ import colorize;
 
 void main(string[] args) {
   string token;
+  bool simple;
 
   getopt(args,
-    "t|token", &token
+    "t|token", &token,
+    "s|simple", &simple
   );
 
   if(token == "") {
@@ -26,10 +28,14 @@ void main(string[] args) {
   TimeEntry te2;
   getCurrentTimeEntry(token, &te);
 
-  auto tid = spawn(&updateDisplay, te);
+  auto tid = spawn(&updateDisplay, te, simple);
+
+  if(simple) {
+    return;
+  }
 
   do {
-    Thread.sleep(dur!"seconds"(2));
+    Thread.sleep(dur!"seconds"(10));
     try {
       getCurrentTimeEntry(token, &te2);
     } catch(Throwable err) {
@@ -43,12 +49,16 @@ void main(string[] args) {
   } while(true);
 }
 
-void updateDisplay(TimeEntry te) {
+void updateDisplay(TimeEntry te, bool simple) {
   auto oldLength = 0;
   auto running = true;
   auto on = true;
-  auto onIndicator = " • ".color(fg.red);
+  auto onIndicator = " • ";
   auto offIndicator = "   ";
+
+  if(!simple) {
+    onIndicator = onIndicator.color(fg.red);
+  }
 
   void onTimeEntry(TimeEntry _te) {
     te = _te;
@@ -56,6 +66,35 @@ void updateDisplay(TimeEntry te) {
 
   void onOwnerTerminated(OwnerTerminated e) {
     running = false;
+
+  }
+
+  void outputEntry() {
+    auto indicator = on ? onIndicator : offIndicator;
+    auto sdescription = te.description;
+
+    if(!simple) {
+      sdescription = sdescription.color(fg.light_black);
+    }
+
+    if(simple) {
+      write(
+        sdescription ~
+        indicator ~ te.humanDuration(simple)
+      );
+      return;
+    }
+
+    cwrite(
+      sdescription ~
+      indicator ~ te.humanDuration(simple)
+    );
+    stdout.flush();
+  }
+
+  if(simple) {
+    outputEntry();
+    return;
   }
 
   while(running) {
@@ -68,13 +107,8 @@ void updateDisplay(TimeEntry te) {
       }
     }
 
-    auto indicator = on ? onIndicator : offIndicator;
     write("\r                                          \r");
-    cwrite(
-      te.description.color(fg.light_black) ~
-      indicator ~ te.humanDuration()
-    );
-    stdout.flush();
+    outputEntry();
     on = !on;
 
     receiveTimeout(dur!"msecs"(500), &onTimeEntry, &onOwnerTerminated);
@@ -92,7 +126,7 @@ struct TimeEntry {
     this.description = description;
   }
 
-  string humanDuration() {
+  string humanDuration(bool simple) {
     auto d = (Clock.currTime() - this.start)
       .split!("hours", "minutes", "seconds");
 
@@ -100,21 +134,30 @@ struct TimeEntry {
     auto sminutes = "%02d".format(d.minutes);
     auto sseconds = "%02d".format(d.seconds);
 
-    if(d.hours > 0) {
-      shours = shours.color(mode.bold);
-      sminutes = sminutes.color(fg.light_black);
-      sseconds = sseconds.color(fg.light_black);
-    } else if(d.minutes > 0) {
-      sminutes = sminutes.color(mode.bold);
-      shours = shours.color(fg.light_black);
-      sseconds = sseconds.color(fg.light_black);
-    } else {
-      sseconds = sseconds.color(mode.bold);
-      shours = shours.color(fg.light_black);
-      sminutes = sminutes.color(fg.light_black);
+    if(!simple) {
+      if(d.hours > 0) {
+        shours = shours.color(mode.bold);
+        sminutes = sminutes.color(fg.light_black);
+        sseconds = sseconds.color(fg.light_black);
+      } else if(d.minutes > 0) {
+        sminutes = sminutes.color(mode.bold);
+        shours = shours.color(fg.light_black);
+        sseconds = sseconds.color(fg.light_black);
+      } else {
+        sseconds = sseconds.color(mode.bold);
+        shours = shours.color(fg.light_black);
+        sminutes = sminutes.color(fg.light_black);
+      }
     }
 
-    auto sep = ":".color(fg.light_black);
+    auto sep = ":";
+    if(!simple) {
+      sep = sep.color(fg.light_black);
+    }
+
+    if(simple) {
+      return format("%s" ~ sep ~ "%s", shours, sminutes);
+    }
     return format("%s" ~ sep ~ "%s" ~ sep ~ "%s", shours, sminutes, sseconds);
   }
 }
